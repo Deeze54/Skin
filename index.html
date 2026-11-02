@@ -1,0 +1,612 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}</style>
+</head>
+<body>
+<title>Skin Routine Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&display=swap">
+<style>
+/* Layout: one phone-first column. Header with level + day nav, "up next" bar, three stat tiles, morning and night checklists, a 4-week log grid, settings. */
+:root {
+  --bg: #F2F5F7;
+  --surface: #FFFFFF;
+  --ink: #13212A;
+  --muted: #4C5B65;
+  --line: #D6DEE4;
+  --accent: #1F5FAE;
+  --on-accent: #FFFFFF;
+  --accent-soft: #E4EDF7;
+  --warn: #9A430B;
+  --warn-soft: #FCEFE3;
+  --part: #E3A15F;
+  --miss: #B42318;
+  --font: 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F171D; --surface: #17222A; --ink: #E6EDF2; --muted: #A1B1BC; --line: #2C3A45;
+    --accent: #79A9EC; --on-accent: #0F171D; --accent-soft: #1B2E44;
+    --warn: #F2A869; --warn-soft: #382517; --part: #C98A4C; --miss: #F28B78;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F171D; --surface: #17222A; --ink: #E6EDF2; --muted: #A1B1BC; --line: #2C3A45;
+  --accent: #79A9EC; --on-accent: #0F171D; --accent-soft: #1B2E44;
+  --warn: #F2A869; --warn-soft: #382517; --part: #C98A4C; --miss: #F28B78;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.45; }
+.app {
+  max-width: 520px; margin: 0 auto;
+  padding-block: 20px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* Header */
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+h1 { margin: 0; font-size: 26px; line-height: 1.15; font-weight: 700; text-wrap: balance; }
+.sub { margin: 0; font-size: 14px; color: var(--muted); }
+.daynav { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+.navbtn { width: 44px; height: 44px; flex-shrink: 0; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); cursor: pointer; font-size: 22px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+.datelabel { flex: 1; min-width: 0; text-align: center; font-weight: 700; font-size: 16px; }
+.todaybtn { align-self: center; border: 0; background: none; color: var(--accent); font-weight: 700; font-size: 14px; padding: 8px 12px; min-height: 44px; cursor: pointer; }
+
+/* Up next */
+.next { background: var(--accent); color: var(--on-accent); border-radius: 14px; padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; }
+.next .label { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; }
+.next .what { font-size: 17px; font-weight: 700; }
+
+/* Stats */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--surface); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.stat .v { font-size: 26px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: 12px; color: var(--muted); }
+
+/* Cards and checklists */
+.card { background: var(--surface); border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.cardhead { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.pill { font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.pill.count { background: var(--accent-soft); color: var(--accent); }
+.pill.tret { background: var(--accent); color: var(--on-accent); }
+.pill.rest { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.pill.recover { background: var(--warn-soft); color: var(--warn); }
+.reason { margin: 0; font-size: 14px; color: var(--muted); }
+.list { list-style: none; margin: 0; padding: 0; }
+.item { position: relative; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); }
+.item:first-child { border-top: 0; }
+.cb { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.item label { position: relative; flex: 1; min-width: 0; display: grid; grid-template-columns: 26px 1fr; column-gap: 12px; align-items: center; padding: 11px 0; min-height: 50px; cursor: pointer; }
+.item label::before { content: ""; grid-row: 1 / span 2; width: 26px; height: 26px; border-radius: 8px; border: 2px solid var(--line); background: var(--surface); }
+.item label::after { content: ""; position: absolute; left: 9px; top: 50%; width: 7px; height: 13px; border: solid var(--on-accent); border-width: 0 3px 3px 0; transform: translateY(-62%) rotate(45deg); opacity: 0; }
+.cb:checked + label::before { background: var(--accent); border-color: var(--accent); }
+.cb:checked + label::after { opacity: 1; }
+.cb:focus-visible + label::before { outline: 3px solid var(--accent); outline-offset: 2px; }
+.cb:disabled + label { cursor: default; opacity: 0.5; }
+.item .t { grid-column: 2; font-weight: 500; }
+.item .s { grid-column: 2; font-size: 13px; color: var(--muted); }
+.cb:checked + label .t { color: var(--muted); text-decoration: line-through; }
+.item.key .t { font-weight: 700; }
+.item.key { background: var(--accent-soft); border-radius: 10px; border-top-color: transparent; padding-inline: 10px; margin-inline: -10px; }
+.item.key + .item { border-top-color: transparent; }
+.item.opt label::before { border-style: dashed; }
+.timer { flex-shrink: 0; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 700; padding: 0 14px; min-height: 44px; cursor: pointer; font-variant-numeric: tabular-nums; }
+.note { margin: 0; font-size: 13px; color: var(--muted); }
+.done-line { margin: 0; font-size: 14px; font-weight: 700; color: var(--accent); }
+
+/* Irritation flag */
+.flag { display: flex; flex-direction: column; gap: 6px; }
+.flagbtn { width: 100%; min-height: 48px; border-radius: 14px; border: 1.5px solid var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 700; font-size: 15px; cursor: pointer; padding: 10px 14px; }
+.flagbtn[aria-pressed="true"] { background: var(--warn); color: var(--surface); }
+
+/* Log grid */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 12px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.sw { width: 16px; height: 6px; border-radius: 3px; display: inline-block; }
+.dotsw { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.dow { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; font-size: 11px; font-weight: 700; color: var(--muted); text-align: center; }
+.grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cell { position: relative; min-height: 54px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); cursor: pointer; padding: 6px 5px 6px; display: flex; flex-direction: column; justify-content: space-between; align-items: stretch; gap: 4px; }
+.cell .n { font-size: 13px; text-align: left; font-variant-numeric: tabular-nums; }
+.cell.today .n { font-weight: 700; color: var(--accent); }
+.cell.sel { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cell.pre { opacity: 0.4; }
+.cell .tdot { position: absolute; top: 7px; right: 6px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.bars { display: flex; flex-direction: column; gap: 3px; }
+.bar { height: 6px; border-radius: 3px; background: var(--line); }
+.bar.done, .sw.done { background: var(--accent); }
+.bar.part, .sw.part { background: var(--part); }
+.bar.miss, .sw.miss { background: transparent; box-shadow: inset 0 0 0 1.5px var(--miss); }
+.bar.future, .bar.pre { background: transparent; }
+.total { margin: 0; font-size: 14px; }
+
+/* Settings */
+.settings label { font-weight: 700; font-size: 14px; }
+.settings input[type="date"] { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; min-height: 44px; width: 100%; max-width: 240px; }
+.foot { text-align: center; font-size: 12px; color: var(--muted); margin: 0; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .item label::before { transition: background-color 0.15s, border-color 0.15s; }
+}
+</style>
+
+<div class="app">
+  <header class="head">
+    <div class="eyebrow" id="eyebrow">Level 1 · Week 1 · Day 1</div>
+    <h1 id="title">Tretinoin 2 nights a week</h1>
+    <p class="sub" id="levelNext">Level 2 starts in 14 days</p>
+    <nav class="daynav" aria-label="Choose day">
+      <button class="navbtn" id="prevDay" type="button" aria-label="Previous day">‹</button>
+      <div class="datelabel" id="dateLabel" aria-live="polite">Today</div>
+      <button class="navbtn" id="nextDay" type="button" aria-label="Next day">›</button>
+    </nav>
+    <button class="todaybtn" id="todayBtn" type="button" hidden>Back to today</button>
+  </header>
+
+  <section class="next" id="nextBar" aria-live="polite">
+    <span class="label" id="nextLabel">Up next · Morning</span>
+    <span class="what" id="nextWhat">Neutrogena Acne Wash</span>
+  </section>
+
+  <section class="stats" aria-label="Progress">
+    <div class="stat"><span class="v" id="stStreak">0</span><span class="k" id="stStreakK">day streak</span></div>
+    <div class="stat"><span class="v" id="stMissed">0</span><span class="k" id="stMissedK">missed this week</span></div>
+    <div class="stat"><span class="v" id="stTret">0/0</span><span class="k">tretinoin nights this week</span></div>
+  </section>
+
+  <section class="card" id="preCard" hidden>
+    <h2>Plan not started yet</h2>
+    <p class="reason" id="preText">Your plan starts soon.</p>
+  </section>
+
+  <section class="card" id="amCard">
+    <div class="cardhead"><h2>Morning</h2><span class="pill count" id="amCount">0/5</span></div>
+    <ul class="list" id="amList"></ul>
+    <p class="note">Shaved? Harry's balm after the wash.</p>
+  </section>
+
+  <section class="card" id="pmCard">
+    <div class="cardhead"><h2>Tonight</h2><span class="pill tret" id="pmType">Tretinoin night</span></div>
+    <p class="reason" id="pmReason">Monday is a tretinoin night in Level 1.</p>
+    <ul class="list" id="pmList"></ul>
+    <p class="note" id="pmNote">Pimple? Mighty Patch on it, tretinoin around it.</p>
+    <p class="done-line" id="dayDone" hidden>Day complete.</p>
+  </section>
+
+  <section class="flag" id="flagBox">
+    <button class="flagbtn" id="flagBtn" type="button" aria-pressed="false">My skin is burning or peeling</button>
+    <p class="note" id="flagNote">Tap this and the next 3 nights switch to moisturizer only.</p>
+  </section>
+
+  <section class="card" aria-labelledby="logTitle">
+    <div class="cardhead"><h2 id="logTitle">Last 4 weeks</h2></div>
+    <div class="legend" aria-hidden="true">
+      <span><i class="sw done"></i>Done</span>
+      <span><i class="sw part"></i>Partly</span>
+      <span><i class="sw miss"></i>Missed</span>
+      <span><i class="dotsw"></i>Tretinoin used</span>
+    </div>
+    <p class="note">Top bar is morning, bottom bar is night. Tap a day to fill it in late.</p>
+    <div class="dow" aria-hidden="true"><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>S</span></div>
+    <div class="grid" id="grid"></div>
+    <p class="total" id="total"></p>
+  </section>
+
+  <section class="card settings">
+    <label for="startDate">Plan start date</label>
+    <input type="date" id="startDate">
+    <p class="note" id="levelPlan"></p>
+  </section>
+
+  <p class="foot" id="saveStatus">Loading your log…</p>
+</div>
+
+<script>
+(function () {
+  // ---------- Routine data ----------
+  var AM = [
+    { k: 'wash', t: 'Neutrogena Acne Wash', s: '30 sec, then rinse' },
+    { k: 'niacin', t: 'Niacinamide + Zinc', s: '3 drops' },
+    { k: 'ha', t: 'Hyaluronic Acid + B5', s: 'On damp skin' },
+    { k: 'moist', t: 'Clinique moisturizer' },
+    { k: 'spf', t: 'La Roche-Posay sunscreen', s: 'Every day, cloudy days too' }
+  ];
+  var PM_TRET = [
+    { k: 'wash', t: 'Vanicream wash' },
+    { k: 'dry', t: 'Pat dry, wait 15 min', s: 'Damp skin stings more', timer: true },
+    { k: 'aqua', t: 'Aquaphor on nostril and mouth corners', s: 'Thin dab' },
+    { k: 'thin', t: 'Thin layer of CeraVe PM' },
+    { k: 'tret', t: 'Tretinoin, pea-size', s: 'Whole face. Skip eyes, nose corners, mouth', key: true },
+    { k: 'again', t: 'CeraVe PM again' }
+  ];
+  var PM_REST = [
+    { k: 'wash', t: 'Vanicream wash' },
+    { k: 'stridex', t: 'Stridex pad', s: 'Optional', optional: true },
+    { k: 'ha', t: 'Hyaluronic Acid + B5' },
+    { k: 'moist', t: 'CeraVe PM' }
+  ];
+  var PM_RECOVER = [
+    { k: 'wash', t: 'Vanicream wash' },
+    { k: 'moist', t: 'CeraVe PM' },
+    { k: 'aqua', t: 'Aquaphor on raw spots', s: 'Optional', optional: true }
+  ];
+  var LEVEL_TITLE = { 1: 'Tretinoin 2 nights a week', 2: 'Tretinoin 3 nights a week', 3: 'Tretinoin every other night' };
+  var LEVEL_DAYS = { 1: [1, 4], 2: [1, 3, 5] };
+  var LEVEL_DAYNAMES = { 1: 'Mon and Thu', 2: 'Mon, Wed and Fri' };
+  var WEEKDAY = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // ---------- Dates (local, YYYY-MM-DD strings) ----------
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parse(s) { var p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+  function addDays(s, n) { var d = parse(s); d.setDate(d.getDate() + n); return ymd(d); }
+  function diff(a, b) { var x = a.split('-').map(Number), y = b.split('-').map(Number); return Math.round((Date.UTC(y[0], y[1] - 1, y[2]) - Date.UTC(x[0], x[1] - 1, x[2])) / 864e5); }
+  function dow(s) { return parse(s).getDay(); }
+  function monday(s) { return addDays(s, -((dow(s) + 6) % 7)); }
+  function fmt(s) { return parse(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }); }
+  function isValidDate(s) { return /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(parse(s).getTime()); }
+
+  var TODAY = ymd(new Date());
+
+  // ---------- State ----------
+  var S = { start: null, days: {}, sel: TODAY, mode: 'connecting', timerEnd: null, timerDate: null };
+  var db = null;
+  var LS = 'skin-tracker-v1';
+
+  function startDate() { return S.start || TODAY; }
+  function idx(s) { return diff(startDate(), s); }
+  function levelOf(s) { var i = idx(s); if (i < 0) return 0; if (i < 14) return 1; if (i < 28) return 2; return 3; }
+  function rec(s) { return S.days[s] || {}; }
+  function tretOn(s) { return !!((rec(s).pm || {}).tret); }
+
+  function recoverySource(s) {
+    for (var n = 0; n < 3; n++) { var x = addDays(s, -n); if (idx(x) >= 0 && rec(x).irritated) return x; }
+    return null;
+  }
+  function nightType(s) {
+    var l = levelOf(s);
+    if (!l) return 'pre';
+    if (recoverySource(s)) return 'recover';
+    if (l < 3) return LEVEL_DAYS[l].indexOf(dow(s)) >= 0 ? 'tret' : 'rest';
+    return tretOn(addDays(s, -1)) ? 'rest' : 'tret';
+  }
+  function stridexState(s) {
+    var show = levelOf(s) === 3;
+    for (var n = 0; n < 7 && show; n++) { var x = addDays(s, -n); if (idx(x) >= 0 && rec(x).irritated) show = false; }
+    var m = monday(s), used = 0;
+    for (var i = 0; i < 7; i++) { var d = addDays(m, i); if (d !== s && (rec(d).pm || {}).stridex) used++; }
+    var mine = !!((rec(s).pm || {}).stridex);
+    return { show: show, used: used, blocked: used >= 2 && !mine };
+  }
+  function nightItems(s) {
+    var t = nightType(s);
+    if (t === 'tret') return PM_TRET;
+    if (t === 'recover') return PM_RECOVER;
+    if (t === 'rest') {
+      var st = stridexState(s);
+      if (!st.show) return PM_REST.filter(function (x) { return x.k !== 'stridex'; });
+      return PM_REST.map(function (x) {
+        if (x.k !== 'stridex') return x;
+        return { k: x.k, t: x.t, optional: true, disabled: st.blocked, s: st.blocked ? 'Used 2 of 2 this week. Skip it tonight.' : 'Optional. Used ' + st.used + ' of 2 this week.' };
+      });
+    }
+    return [];
+  }
+  function status(s, group) {
+    if (idx(s) < 0) return 'pre';
+    if (s > TODAY) return 'future';
+    var items = group === 'am' ? AM : nightItems(s);
+    var req = items.filter(function (x) { return !x.optional; });
+    var r = rec(s)[group] || {};
+    var n = req.filter(function (x) { return r[x.k]; }).length;
+    if (req.length && n === req.length) return 'done';
+    if (s === TODAY) return n ? 'part' : 'open';
+    return n ? 'part' : 'miss';
+  }
+  function dayDone(s) { return status(s, 'am') === 'done' && status(s, 'pm') === 'done'; }
+  function streak() {
+    var d = dayDone(TODAY) ? TODAY : addDays(TODAY, -1), n = 0;
+    while (idx(d) >= 0 && dayDone(d)) { n++; d = addDays(d, -1); }
+    return n;
+  }
+
+  // ---------- Storage ----------
+  function loadLocal() {
+    try { var j = JSON.parse(localStorage.getItem(LS) || 'null'); if (j) { S.start = j.start || null; S.days = j.days || {}; } } catch (e) {}
+  }
+  function saveLocal() {
+    try { localStorage.setItem(LS, JSON.stringify({ start: S.start, days: S.days })); } catch (e) {}
+  }
+  function saveStart(v) {
+    S.start = v; saveLocal();
+    if (db) db.doc('tracker/settings').set({ startDate: v }).catch(saveFailed);
+  }
+  function saveDay(s) {
+    var r = S.days[s]; r.date = s; r.updatedAt = new Date().toISOString();
+    if (!S.start) saveStart(startDate());
+    saveLocal();
+    if (db) db.doc('days/' + s).set(r).catch(saveFailed);
+  }
+  function saveFailed() { S.mode = 'error'; renderFoot(); }
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+
+  async function connect() {
+    var d = null;
+    try { d = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch (e) { d = null; }
+    if (!d) { S.mode = 'local'; render(); return; }
+    db = d;
+    var gotSettings = false, gotDays = false;
+    db.doc('tracker/settings').onSnapshot(function (snap) {
+      S.start = snap.exists ? ((snap.data() || {}).startDate || null) : null;
+      gotSettings = true; if (gotDays) S.mode = 'cloud'; saveLocal(); render();
+    }, function () { S.mode = 'error'; renderFoot(); });
+    db.collection('days').onSnapshot(function (q) {
+      var days = {};
+      q.docs.forEach(function (doc) { if (doc.exists) days[doc.id] = clone(doc.data()); });
+      S.days = days; gotDays = true; if (gotSettings) S.mode = 'cloud'; saveLocal(); render();
+    }, function () { S.mode = 'error'; renderFoot(); });
+  }
+
+  // ---------- Actions ----------
+  function setItem(s, group, k, val) {
+    if (s > TODAY || idx(s) < 0) return;
+    var r = S.days[s] || (S.days[s] = { am: {}, pm: {} });
+    r[group] = r[group] || {};
+    r[group][k] = val;
+    saveDay(s); render();
+  }
+  function toggleIrritation() {
+    var s = S.sel;
+    if (s > TODAY || idx(s) < 0) return;
+    var r = S.days[s] || (S.days[s] = { am: {}, pm: {} });
+    r.irritated = !r.irritated;
+    saveDay(s); render();
+  }
+
+  var timerInt = null;
+  function timerClick() {
+    if (S.timerEnd) { S.timerEnd = null; clearInterval(timerInt); tick(); return; }
+    S.timerEnd = Date.now() + 15 * 60 * 1000; S.timerDate = S.sel;
+    clearInterval(timerInt); timerInt = setInterval(tick, 1000); tick();
+  }
+  function tick() {
+    var btn = document.getElementById('timerBtn');
+    if (S.timerEnd && S.timerEnd - Date.now() <= 0) {
+      clearInterval(timerInt); S.timerEnd = null;
+      if (S.timerDate) setItem(S.timerDate, 'pm', 'dry', true);
+      if (btn) btn.textContent = 'Done';
+      return;
+    }
+    if (!btn) return;
+    if (!S.timerEnd) { btn.textContent = 'Timer'; btn.setAttribute('aria-label', 'Start 15 minute timer'); return; }
+    var left = S.timerEnd - Date.now();
+    btn.textContent = Math.floor(left / 60000) + ':' + pad(Math.floor(left / 1000) % 60);
+    btn.setAttribute('aria-label', 'Timer running. Tap to stop');
+  }
+
+  // ---------- Rendering ----------
+  var $ = function (id) { return document.getElementById(id); };
+
+  function renderList(ul, items, group, s) {
+    var future = s > TODAY;
+    var sig = s + '|' + group + '|' + future + '|' + items.map(function (x) { return x.k + '/' + (x.disabled ? 1 : 0) + '/' + (x.s || ''); }).join(',');
+    if (ul.dataset.sig !== sig) {
+      ul.dataset.sig = sig;
+      ul.textContent = '';
+      items.forEach(function (it) {
+        var li = document.createElement('li');
+        li.className = 'item' + (it.key ? ' key' : '') + (it.optional ? ' opt' : '');
+        var id = group + '-' + it.k;
+        var input = document.createElement('input');
+        input.type = 'checkbox'; input.id = id; input.className = 'cb';
+        input.disabled = future || !!it.disabled;
+        input.addEventListener('change', function () { setItem(S.sel, group, it.k, input.checked); });
+        var label = document.createElement('label');
+        label.htmlFor = id;
+        var t = document.createElement('span'); t.className = 't'; t.textContent = it.t; label.appendChild(t);
+        if (it.s) { var sm = document.createElement('span'); sm.className = 's'; sm.textContent = it.s; label.appendChild(sm); }
+        li.appendChild(input); li.appendChild(label);
+        if (it.timer && !future) {
+          var b = document.createElement('button');
+          b.type = 'button'; b.className = 'timer'; b.id = 'timerBtn';
+          b.addEventListener('click', timerClick);
+          li.appendChild(b);
+        }
+        ul.appendChild(li);
+      });
+    }
+    var r = rec(s)[group] || {};
+    items.forEach(function (it) { var el = $(group + '-' + it.k); if (el) el.checked = !!r[it.k]; });
+    tick();
+  }
+
+  function renderFoot() {
+    var m = {
+      connecting: 'Loading your log…',
+      cloud: 'Saved to your account. Open this page on any device to pick up where you left off.',
+      local: 'Saving on this device only.',
+      error: 'Last change didn’t save. Check your connection and tap it again.'
+    };
+    $('saveStatus').textContent = m[S.mode] || '';
+  }
+
+  function render() {
+    var s = S.sel, l = levelOf(s), i = idx(s);
+
+    // Header
+    if (!l) {
+      $('eyebrow').textContent = 'Before your plan';
+      $('title').textContent = 'Plan starts ' + fmt(startDate());
+      $('levelNext').textContent = 'Change the start date at the bottom of this page.';
+    } else {
+      var week = Math.floor(i / 7) + 1;
+      $('eyebrow').textContent = 'Level ' + l + ' · Week ' + week + ' · Day ' + (i + 1);
+      $('title').textContent = LEVEL_TITLE[l];
+      var nl = '';
+      if (l < 3) {
+        var left = (l === 1 ? 14 : 28) - i;
+        nl = left === 1 ? 'Level ' + (l + 1) + ' starts tomorrow.' : 'Level ' + (l + 1) + ' starts ' + fmt(addDays(startDate(), l === 1 ? 14 : 28)) + ', in ' + left + ' days.';
+      } else {
+        nl = 'Go nightly only if you have no flaking. Clearer skin usually shows by week 8–12.';
+      }
+      if (week >= 2 && week <= 6) nl += ' More breakouts in weeks 2–6 are normal.';
+      $('levelNext').textContent = nl;
+    }
+    var dl = s === TODAY ? 'Today · ' : (s === addDays(TODAY, -1) ? 'Yesterday · ' : (s === addDays(TODAY, 1) ? 'Tomorrow · ' : ''));
+    $('dateLabel').textContent = dl + fmt(s);
+    $('todayBtn').hidden = s === TODAY;
+
+    // Up next
+    renderNext();
+
+    // Stats
+    var st = streak();
+    $('stStreak').textContent = st;
+    $('stStreakK').textContent = st === 1 ? 'day streak' : 'day streak';
+    var m = monday(TODAY), missAm = 0, missPm = 0, planned = 0, used = 0;
+    for (var k = 0; k < 7; k++) {
+      var d = addDays(m, k);
+      if (d > TODAY || idx(d) < 0) continue;
+      if (d < TODAY) {
+        var a = status(d, 'am'), p = status(d, 'pm');
+        if (a === 'miss' || a === 'part') missAm++;
+        if (p === 'miss' || p === 'part') missPm++;
+      }
+      if (nightType(d) === 'tret') { planned++; if (tretOn(d)) used++; }
+    }
+    $('stMissed').textContent = missAm + missPm;
+    $('stMissedK').textContent = (missAm + missPm) ? 'missed this week (' + missAm + ' AM, ' + missPm + ' PM)' : 'missed this week';
+    $('stTret').textContent = used + '/' + planned;
+
+    // Checklists
+    var pre = !l;
+    $('preCard').hidden = !pre;
+    $('amCard').hidden = pre; $('pmCard').hidden = pre; $('flagBox').hidden = pre || s > TODAY;
+    if (pre) {
+      $('preText').textContent = 'Your plan starts ' + fmt(startDate()) + '. Nothing to check off for this day.';
+    } else {
+      renderList($('amList'), AM, 'am', s);
+      var amR = rec(s).am || {};
+      $('amCount').textContent = AM.filter(function (x) { return amR[x.k]; }).length + '/' + AM.length;
+
+      var t = nightType(s), items = nightItems(s);
+      renderList($('pmList'), items, 'pm', s);
+      var pill = $('pmType');
+      pill.className = 'pill ' + t;
+      pill.textContent = t === 'tret' ? 'Tretinoin night' : (t === 'recover' ? 'Recovery night' : 'Rest night');
+      var reason = '';
+      if (t === 'recover') {
+        var src = recoverySource(s);
+        reason = 'You flagged burning or peeling on ' + fmt(src) + '. Moisturizer only through ' + fmt(addDays(src, 2)) + '.';
+      } else if (l < 3) {
+        reason = t === 'tret' ? WEEKDAY[dow(s)] + ' is a tretinoin night in Level ' + l + '.' : 'Tretinoin nights in Level ' + l + ': ' + LEVEL_DAYNAMES[l] + '.';
+      } else {
+        reason = t === 'tret' ? 'No tretinoin last night, so tonight is a tretinoin night.' : 'You used tretinoin last night, so tonight is a rest night.';
+      }
+      $('pmReason').textContent = reason;
+      $('pmNote').hidden = t !== 'tret';
+      var dd = dayDone(s);
+      $('dayDone').hidden = !dd;
+      $('dayDone').textContent = s === TODAY ? 'Today is done. ' + st + '-day streak.' : 'Day complete.';
+      var irr = !!rec(s).irritated;
+      $('flagBtn').setAttribute('aria-pressed', irr ? 'true' : 'false');
+      $('flagBtn').textContent = irr ? 'Flagged: burning or peeling. Tap to undo' : 'My skin is burning or peeling';
+      $('flagNote').textContent = irr ? 'Tonight and the next 2 nights are moisturizer only.' + (l === 3 ? ' Stridex is off for a week.' : '') : 'Tap this and tonight plus the next 2 nights switch to moisturizer only.';
+    }
+
+    renderGrid();
+
+    // Settings
+    var inp = $('startDate');
+    if (document.activeElement !== inp) inp.value = startDate();
+    $('levelPlan').textContent = 'Level 2 starts ' + fmt(addDays(startDate(), 14)) + '. Level 3 starts ' + fmt(addDays(startDate(), 28)) + '.';
+    renderFoot();
+  }
+
+  function renderNext() {
+    var bar = $('nextBar');
+    if (idx(TODAY) < 0) { bar.hidden = true; return; }
+    bar.hidden = false;
+    var amR = rec(TODAY).am || {}, pmR = rec(TODAY).pm || {};
+    var amLeft = AM.filter(function (x) { return !amR[x.k]; });
+    var pmLeft = nightItems(TODAY).filter(function (x) { return !x.optional && !pmR[x.k]; });
+    var hour = new Date().getHours();
+    if (!amLeft.length && !pmLeft.length) { $('nextLabel').textContent = 'Today'; $('nextWhat').textContent = 'All done. ' + streak() + '-day streak.'; return; }
+    if (amLeft.length && (hour < 16 || !pmLeft.length)) { $('nextLabel').textContent = 'Up next · Morning'; $('nextWhat').textContent = amLeft[0].t; return; }
+    if (hour >= 16) { $('nextLabel').textContent = 'Up next · Tonight'; $('nextWhat').textContent = pmLeft[0].t; return; }
+    $('nextLabel').textContent = 'Morning done · Tonight starts with'; $('nextWhat').textContent = pmLeft[0].t;
+  }
+
+  function renderGrid() {
+    var grid = $('grid');
+    grid.textContent = '';
+    var first = addDays(monday(TODAY), -21);
+    var words = { done: 'done', part: 'partly done', miss: 'missed', open: 'not done yet', future: 'upcoming', pre: 'before plan' };
+    for (var n = 0; n < 28; n++) {
+      (function (d) {
+        var a = status(d, 'am'), p = status(d, 'pm');
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'cell' + (d === TODAY ? ' today' : '') + (d === S.sel ? ' sel' : '') + (a === 'pre' ? ' pre' : '');
+        b.setAttribute('aria-label', fmt(d) + ': morning ' + words[a] + ', night ' + words[p] + (tretOn(d) ? ', tretinoin used' : ''));
+        if (d === S.sel) b.setAttribute('aria-current', 'date');
+        var num = document.createElement('span'); num.className = 'n'; num.textContent = parse(d).getDate();
+        b.appendChild(num);
+        if (tretOn(d)) { var dot = document.createElement('span'); dot.className = 'tdot'; b.appendChild(dot); }
+        var bars = document.createElement('span'); bars.className = 'bars';
+        var b1 = document.createElement('span'); b1.className = 'bar ' + a;
+        var b2 = document.createElement('span'); b2.className = 'bar ' + p;
+        bars.appendChild(b1); bars.appendChild(b2); b.appendChild(bars);
+        b.addEventListener('click', function () { S.sel = d; render(); window.scrollTo({ top: 0, behavior: 'smooth' }); });
+        grid.appendChild(b);
+      })(addDays(first, n));
+    }
+    // Totals since start
+    var missed = 0, full = 0, d = startDate();
+    while (d < TODAY) {
+      var a = status(d, 'am'), p = status(d, 'pm');
+      if (a === 'miss' || a === 'part') missed++;
+      if (p === 'miss' || p === 'part') missed++;
+      if (a === 'done' && p === 'done') full++;
+      d = addDays(d, 1);
+    }
+    $('total').textContent = idx(TODAY) <= 0 ? 'Your log starts today.' : 'Since ' + fmt(startDate()) + ': ' + full + ' full days, ' + missed + ' routines missed or partly done.';
+  }
+
+  // ---------- Wiring ----------
+  $('prevDay').addEventListener('click', function () { S.sel = addDays(S.sel, -1); render(); });
+  $('nextDay').addEventListener('click', function () { S.sel = addDays(S.sel, 1); render(); });
+  $('todayBtn').addEventListener('click', function () { S.sel = TODAY; render(); });
+  $('flagBtn').addEventListener('click', toggleIrritation);
+  $('startDate').addEventListener('change', function (e) {
+    var v = e.target.value;
+    if (isValidDate(v)) { saveStart(v); render(); }
+  });
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible') return;
+    var now = ymd(new Date());
+    if (now !== TODAY) { if (S.sel === TODAY) S.sel = now; TODAY = now; }
+    render();
+  });
+
+  loadLocal();
+  render();
+  connect();
+})();
+</script>
+
+</body>
+</html>
